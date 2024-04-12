@@ -1,2 +1,2 @@
 # Mp4Together-sfu
-Implementation of mediasoup sfu for facilitating group audio calls
+Implementation of [mediasoup sfu](https://mediasoup.org) for facilitating group audio calls
