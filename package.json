@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "DEBUG=mediasoup:* tsc --watch"
+    "start": "DEBUG=mediasoup:* tsc --watch",
+    "build": "nodemon dist/index.js"
   },
   "keywords": [],
   "author": "",
