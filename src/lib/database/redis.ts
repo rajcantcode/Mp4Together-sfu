@@ -13,15 +13,6 @@ export const connect = () => {
 };
 
 const redis = connect();
-setInterval(() => {
-  redis?.ping((err, result) => {
-    if (err) {
-      console.error("Error pinging Redis:", err);
-    } else {
-      console.log("Ping result:", result);
-    }
-  });
-}, 10000);
 redis?.on("error", (err) => {
   console.error("Redis error:", err);
 });
