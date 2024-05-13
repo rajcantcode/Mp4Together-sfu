@@ -111,6 +111,8 @@ io.on("connection", async (socket) => {
     return;
   }
 
+  socket.emit("ready");
+
   socket.on(
     "getRtpCapabilities",
     async ({ socketRoomId: roomId }, callback) => {
