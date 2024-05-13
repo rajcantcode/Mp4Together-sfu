@@ -11,8 +11,9 @@ export const authenticateToken = async (token: string): Promise<boolean> => {
     const payload = await jwt.verify(token, secret);
     if (typeof payload === "object" && "name" in payload) {
       const user =
-        (await redis?.hgetall(`user:${payload.name}`)) ||
-        (await User.findOne({ username: payload.name }));
+        (await redis?.hgetall(
+          `${payload.guest ? `guest` : `user`}:${payload.name}`
+        )) || (await User.findOne({ username: payload.name }));
       if (!user) {
         return false;
       }
