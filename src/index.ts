@@ -110,6 +110,8 @@ io.on("connection", async (socket) => {
     socket.disconnect();
     return;
   }
+  let socketUser = isValidToken;
+  let socketUserRoom: string;
 
   socket.emit("ready");
 
@@ -121,6 +123,7 @@ io.on("connection", async (socket) => {
           socketRoomId: roomId,
         });
         socketIdToSocketRoomId.set(socket.id, socketRoomId);
+        socketUserRoom = socketRoomId;
         const router = socketRoomToRouter.get(socketRoomId);
         if (!router) {
           throw new Error("No router found");
@@ -411,7 +414,8 @@ io.on("connection", async (socket) => {
   // Used when someone leaves the room and other participants want to delete that person's transport
   socket.on("close-transport", closeTransport);
 
-  socket.on("disconnect", (e) => {
+  socket.on("disconnect", async (e) => {
+    await closeTransports({ leaver: socketUser, socketRoomId: socketUserRoom });
     socketIdToSocketRoomId.delete(socket.id);
     console.log("A user disconnected", { e });
   });
@@ -450,6 +454,7 @@ const closeTransports = async ({
   leaver: string | undefined;
   socketRoomId: string;
 }) => {
+  console.log("Closing transports for " + leaver);
   try {
     if (Object.keys(roomTransports).length === 0) return;
     if (Object.keys(roomTransports[socketRoomId]).length === 0)
@@ -763,16 +768,6 @@ app.delete("/router/delete/:socketRoomId", async (req, res) => {
     }
     return res.status(501).json({ msg: "Internal server error" });
   }
-});
-
-app.get("/print", (req, res) => {
-  console.dir(roomTransports);
-  res.status(200).json(roomTransports);
-});
-app.get("/clients", (req, res) => {
-  const connectedClientsCount = io.sockets.sockets.size;
-  console.log("Sent clients");
-  res.json({ connectedClients: connectedClientsCount });
 });
 
 server.listen(process.env.PORT, () => {
