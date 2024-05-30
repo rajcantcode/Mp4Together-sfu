@@ -457,8 +457,10 @@ const closeTransports = async ({
   console.log("Closing transports for " + leaver);
   try {
     if (Object.keys(roomTransports).length === 0) return;
-    if (Object.keys(roomTransports[socketRoomId]).length === 0)
+    if (Object.keys(roomTransports[socketRoomId]).length === 0) {
       delete roomTransports[socketRoomId];
+      return;
+    }
     // if leaver is not passed, that means the room is deleted, so we need to delete all transports that belonged to that room
     if (!leaver) {
       const peers = Object.keys(roomTransports[socketRoomId]);
