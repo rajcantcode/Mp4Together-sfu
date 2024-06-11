@@ -352,7 +352,7 @@ io.on("connection", async (socket) => {
         if (!checkIfTransportExists(socketRoomId, username, transportOwner)) {
           throw new Error("Invalid details");
         }
-        await closeOrPauseConsumer(
+        await manageConsumerState(
           socketRoomId,
           username,
           transportOwner,
@@ -378,7 +378,7 @@ io.on("connection", async (socket) => {
       ) {
         callback({ error: { msg: "Invalid details" } });
       }
-      await closeOrPauseProducer(socketRoomId, username, username, "pause");
+      await manageProducerState(socketRoomId, username, username, "pause");
     } catch (error) {
       callback(error);
     }
@@ -397,7 +397,7 @@ io.on("connection", async (socket) => {
       ) {
         callback({ error: { msg: "Invalid details" } });
       }
-      await closeOrPauseProducer(socketRoomId, username, username, "resume");
+      await manageProducerState(socketRoomId, username, username, "resume");
     } catch (error) {
       callback(error);
     }
@@ -410,10 +410,14 @@ io.on("connection", async (socket) => {
   // Used when someone leaves the room and other participants want to delete that person's transport
   socket.on("close-transport", closeTransport);
 
-  socket.on("disconnect", async (e) => {
-    await closeTransports({ leaver: socketUser, socketRoomId: socketUserRoom });
+  socket.on("disconnect", async (reason) => {
+    if (reason !== "client namespace disconnect") {
+      await closeTransports({
+        leaver: socketUser,
+        socketRoomId: socketUserRoom,
+      });
+    }
     socketIdToSocketRoomId.delete(socket.id);
-    console.log("A user disconnected", { e });
   });
 });
 
@@ -431,7 +435,7 @@ const closeTransport = async ({
       return { error: { msg: "Invalid data" } };
     }
     roomTransports[socketRoomId][username][transportToDelete].transport.close();
-    await closeOrPauseConsumer(
+    await manageConsumerState(
       socketRoomId,
       username,
       transportToDelete,
@@ -450,7 +454,6 @@ const closeTransports = async ({
   leaver: string | undefined;
   socketRoomId: string;
 }) => {
-  console.log("Closing transports for " + leaver);
   try {
     if (Object.keys(roomTransports).length === 0) return;
     if (Object.keys(roomTransports[socketRoomId]).length === 0) {
@@ -465,9 +468,9 @@ const closeTransports = async ({
         peernames.forEach(async (transport) => {
           roomTransports[socketRoomId][peer][transport].transport.close();
           if (peer === transport)
-            await closeOrPauseProducer(socketRoomId, peer, transport, "close");
+            await manageProducerState(socketRoomId, peer, transport, "close");
           else
-            await closeOrPauseConsumer(socketRoomId, peer, transport, "close");
+            await manageConsumerState(socketRoomId, peer, transport, "close");
         });
       });
       delete roomTransports[socketRoomId];
@@ -478,14 +481,14 @@ const closeTransports = async ({
     Object.keys(peerTransports).forEach(async (transportOwner) => {
       peerTransports[transportOwner].transport.close();
       if (transportOwner === leaver)
-        await closeOrPauseProducer(
+        await manageProducerState(
           socketRoomId,
           leaver,
           transportOwner,
           "close"
         );
       else
-        await closeOrPauseConsumer(
+        await manageConsumerState(
           socketRoomId,
           leaver,
           transportOwner,
@@ -544,7 +547,6 @@ const getLocalIp = () => {
       return;
     }
   });
-  console.log(localIp);
   return localIp;
 };
 
@@ -604,7 +606,7 @@ const createWebRtcTransport = async (
   return options;
 };
 
-const closeOrPauseProducer = async (
+const manageProducerState = async (
   socketRoomId: string,
   username: string,
   transportOwner: string,
@@ -642,7 +644,7 @@ const closeOrPauseProducer = async (
   }
 };
 
-const closeOrPauseConsumer = async (
+const manageConsumerState = async (
   socketRoomId: string,
   username: string,
   transportOwner: string,
@@ -743,7 +745,6 @@ app.post("/router/create/:socketRoomId", async (req, res) => {
 
 app.delete("/router/delete/:socketRoomId", async (req, res) => {
   try {
-    console.log("received request to delete a router");
     const { secret } = req.body;
     const { socketRoomId } = SocketRoomValidator.parse({
       socketRoomId: req.params.socketRoomId,
