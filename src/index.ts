@@ -20,7 +20,6 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
-import mongoose from "mongoose";
 import { Server } from "socket.io";
 import { authenticateToken } from "./helpers.js";
 import {
@@ -29,14 +28,13 @@ import {
   TransportConnectValidator,
 } from "./lib/validators/socketRoom.js";
 import { ZodError } from "zod";
-import { RtpParameters } from "mediasoup/node/lib/RtpParameters";
-import connectToMongoose from "./lib/database/mongo.js";
+import { RtpParameters } from "mediasoup/node/lib/RtpParameters.js";
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTENDURL,
+    origin: process.env.FRONTEND_URL,
     credentials: true,
     methods: ["GET", "POST"],
   },
@@ -44,15 +42,13 @@ const io = new Server(server, {
 app.use(
   cors({
     // @ts-ignore
-    origin: [process.env.FRONTENDURL, process.env.MAIN_SERVER_URL],
+    origin: [process.env.FRONTEND_URL, process.env.MAIN_SERVER_URL],
     credentials: true, // Allow cookies to be sent with the request
   })
 );
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
-
-connectToMongoose().catch((err) => console.error(err));
 
 interface transportOptions {
   id: string;
@@ -548,6 +544,7 @@ const getLocalIp = () => {
       return;
     }
   });
+  console.log(localIp);
   return localIp;
 };
 

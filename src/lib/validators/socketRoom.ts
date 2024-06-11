@@ -1,5 +1,5 @@
 import { RtpParameters } from "mediasoup/node/lib/fbs/rtp-parameters.js";
-import { DtlsParameters } from "mediasoup/node/lib/fbs/web-rtc-transport.js";
+import { DtlsParameters } from "mediasoup/node/lib/fbs/web-rtc-transport";
 import { z } from "zod";
 
 export const SocketRoomValidator = z.object({

@@ -1,6 +1,4 @@
 import jwt from "jsonwebtoken";
-import { User } from "./model/User.js";
-import redis from "./lib/database/redis.js";
 
 export const authenticateToken = async (
   token: string
