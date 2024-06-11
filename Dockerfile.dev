@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1.2
+
+FROM node:21.7-alpine3.20
+
+WORKDIR /home/node/app
+
+# Install Python and pip
+RUN apk add --no-cache g++ make python3 py3-pip
+RUN if [ ! -e /usr/bin/python ]; then ln -sf python3 /usr/bin/python ; fi
+RUN if [[ ! -e /usr/bin/pip ]]; then ln -s pip3 /usr/bin/pip ; fi
+
+# Create a virtual environment and install required packages
+RUN python3 -m venv ~/pyvenv --system-site-packages
+RUN ~/pyvenv/bin/pip3 install --no-cache --upgrade pip setuptools
+
+# Set PYTHON environment variable
+ENV PYTHON /usr/bin/python3
+
+# Install Clang and build tools
+RUN apk add --no-cache clang g++ make linux-headers
+RUN ln -sf $(which clang) /usr/bin/cc
+RUN ln -sf $(which clang++) /usr/bin/c++
+
+COPY package*.json ./
+
+RUN --mount=type=cache,target=/home/node/app/.npm \
+  npm set cache /home/node/app/.npm && \
+  npm install 
+
+COPY . .
+
+RUN npm install -g typescript
+
+EXPOSE 3001
+
+EXPOSE 10000-10100/tcp
+
+EXPOSE 10000-10100/udp
+
+CMD [ "npx", "concurrently", "\"npm run start\"", "\"npm run build\"" ]
