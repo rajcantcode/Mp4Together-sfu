@@ -29,6 +29,7 @@ import {
 } from "./lib/validators/socketRoom.js";
 import { ZodError } from "zod";
 import { RtpParameters } from "mediasoup/node/lib/RtpParameters.js";
+import { config } from "./config.js";
 dotenv.config();
 const app = express();
 const server = http.createServer(app);
@@ -516,39 +517,16 @@ const checkIfTransportExists = (
   return true;
 };
 
-const worker = await createWorker({
-  logLevel: "debug",
-  logTags: ["info", "ice", "dtls", "rtp", "srtp", "rtcp"],
-  rtcMinPort: 10000,
-  rtcMaxPort: 10100,
-});
+const worker = await createWorker(config.createWorkerOptions);
 
-const mediaCodecs: [RtpCodecCapability] = [
-  {
-    kind: "audio",
-    mimeType: "audio/opus",
-    clockRate: 48000,
-    channels: 2,
-  },
-];
-
-const ifaces = os.networkInterfaces();
-const getLocalIp = () => {
-  let localIp = "127.0.0.1";
-  Object.keys(ifaces).forEach((ifname) => {
-    // @ts-ignore
-    for (const iface of ifaces[ifname]) {
-      // Ignore IPv6 and 127.0.0.1
-      if (iface.family !== "IPv4" || iface.internal !== false) {
-        continue;
-      }
-      // Set the local ip to the first IPv4 address found and exit the loop
-      localIp = iface.address;
-      return;
-    }
-  });
-  return localIp;
-};
+// const mediaCodecs: [RtpCodecCapability] = [
+//   {
+//     kind: "audio",
+//     mimeType: "audio/opus",
+//     clockRate: 48000,
+//     channels: 2,
+//   },
+// ];
 
 const createWebRtcTransport = async (
   socketRoomId: string,
@@ -556,24 +534,9 @@ const createWebRtcTransport = async (
   username: string,
   joiner: string | undefined
 ) => {
-  const transport = await router.createWebRtcTransport({
-    enableTcp: true,
-    enableUdp: true,
-    preferUdp: true,
-    // listenIps: [
-    //   {
-    //     ip: "0.0.0.0",
-    //     announcedIp: getLocalIp(),
-    //   },
-    // ],
-    listenInfos: [
-      {
-        protocol: "udp",
-        ip: "0.0.0.0",
-        announcedIp: process.env.SERVER_ANNOUNCED_IP || getLocalIp(),
-      },
-    ],
-  });
+  const transport = await router.createWebRtcTransport(
+    config.createWebRtcTransportOptions
+  );
   transport.on("dtlsstatechange", (dtlsState) => {
     if (dtlsState === "closed") {
       transport.close();
@@ -730,6 +693,7 @@ app.post("/router/create/:socketRoomId", async (req, res) => {
       return res.status(403).json({ msg: "No such user exists" });
     }
 
+    const mediaCodecs = config.mediaCodecs;
     const router: Router = await worker.createRouter({ mediaCodecs });
     roomTransports[socketRoomId] = {};
     socketRoomToRouter.set(socketRoomId, router);
