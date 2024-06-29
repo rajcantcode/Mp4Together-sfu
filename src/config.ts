@@ -1,7 +1,8 @@
 import * as os from "os";
+import dotenv from "dotenv";
 import { RtpCodecCapability, WorkerSettings } from "mediasoup/node/lib/types";
 import { WebRtcTransportOptions } from "mediasoup/node/lib/types";
-
+dotenv.config();
 // This file contains the configurations for mediasoup
 
 const ifaces = os.networkInterfaces();
@@ -45,12 +46,12 @@ export const config = {
       {
         protocol: "udp",
         ip: process.env.SERVER_LISTEN_IP || "0.0.0.0",
-        announcedIp: getLocalIp(), // Replace by public Ip, if deploying the server
+        announcedIp: process.env.SERVER_ANNOUNCED_IP || getLocalIp(), // Replace by public Ip, if deploying the server
       },
       {
         protocol: "tcp",
         ip: process.env.SERVER_LISTEN_IP || "0.0.0.0",
-        announcedIp: getLocalIp(), // Replace by public Ip, if deploying the server
+        announcedIp: process.env.SERVER_ANNOUNCED_IP || getLocalIp(), // Replace by public Ip, if deploying the server
       },
     ],
   } as WebRtcTransportOptions,
